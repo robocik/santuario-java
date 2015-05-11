@@ -150,17 +150,11 @@ public class TransformXSLT extends TransformSpi {
             output.setOutputStream(baos);
             return output;
         } catch (XMLSecurityException ex) {
-            Object exArgs[] = { ex.getMessage() };
-
-            throw new TransformationException("generic.EmptyMessage", exArgs, ex);
+            throw new TransformationException(ex);
         } catch (TransformerConfigurationException ex) {
-            Object exArgs[] = { ex.getMessage() };
-
-            throw new TransformationException("generic.EmptyMessage", exArgs, ex);
+            throw new TransformationException(ex);
         } catch (TransformerException ex) {
-            Object exArgs[] = { ex.getMessage() };
-
-            throw new TransformationException("generic.EmptyMessage", exArgs, ex);
+            throw new TransformationException(ex);
         }
     }
 }

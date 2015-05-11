@@ -35,13 +35,25 @@ import java.io.ByteArrayInputStream;
 import java.net.URI;
 import java.net.URISyntaxException;
 import java.security.Provider;
-import java.util.*;
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.Iterator;
+import java.util.List;
 
-import javax.xml.crypto.*;
-import javax.xml.crypto.dsig.*;
+import javax.xml.crypto.Data;
+import javax.xml.crypto.MarshalException;
+import javax.xml.crypto.NodeSetData;
+import javax.xml.crypto.URIDereferencer;
+import javax.xml.crypto.URIReferenceException;
+import javax.xml.crypto.XMLCryptoContext;
+import javax.xml.crypto.XMLStructure;
 import javax.xml.crypto.dom.DOMURIReference;
+import javax.xml.crypto.dsig.Transform;
+import javax.xml.crypto.dsig.XMLSignature;
 import javax.xml.crypto.dsig.keyinfo.RetrievalMethod;
-import javax.xml.parsers.*;
+import javax.xml.parsers.DocumentBuilder;
+
+import org.apache.xml.security.utils.XMLUtils;
 import org.w3c.dom.Attr;
 import org.w3c.dom.Document;
 import org.w3c.dom.Element;
@@ -62,7 +74,7 @@ public final class DOMRetrievalMethod extends DOMStructure
     private Attr here;
 
     /**
-     * Creates a <code>DOMRetrievalMethod</code> containing the specified 
+     * Creates a <code>DOMRetrievalMethod</code> containing the specified
      * URIReference and List of Transforms.
      *
      * @param uri the URI
@@ -70,11 +82,11 @@ public final class DOMRetrievalMethod extends DOMStructure
      * @param transforms a list of {@link Transform}s. The list is defensively
      *    copied to prevent subsequent modification. May be <code>null</code>
      *    or empty.
-     * @throws IllegalArgumentException if the format of <code>uri</code> is 
+     * @throws IllegalArgumentException if the format of <code>uri</code> is
      *    invalid, as specified by Reference's URI attribute in the W3C
      *    specification for XML-Signature Syntax and Processing
      * @throws NullPointerException if <code>uriReference</code>
-     *    is <code>null</code> 
+     *    is <code>null</code>
      * @throws ClassCastException if <code>transforms</code> contains any
      *    entries that are not of type {@link Transform}
      */
@@ -107,7 +119,7 @@ public final class DOMRetrievalMethod extends DOMStructure
 
         this.type = type;
     }
-        
+
     /**
      * Creates a <code>DOMRetrievalMethod</code> from an element.
      *
@@ -123,13 +135,13 @@ public final class DOMRetrievalMethod extends DOMStructure
 
         // get here node
         here = rmElem.getAttributeNodeNS(null, "URI");
-        
+
         boolean secVal = Utils.secureValidation(context);
 
         // get Transforms, if specified
         List<Transform> transforms = new ArrayList<Transform>();
         Element transformsElem = DOMUtils.getFirstChildElement(rmElem);
-        
+
         if (transformsElem != null) {
             String localName = transformsElem.getLocalName();
             String namespace = transformsElem.getNamespaceURI();
@@ -215,7 +227,7 @@ public final class DOMRetrievalMethod extends DOMStructure
         }
 
         /*
-         * If URIDereferencer is specified in context; use it, otherwise use 
+         * If URIDereferencer is specified in context; use it, otherwise use
          * built-in.
          */
         URIDereferencer deref = context.getURIDereferencer();
@@ -254,11 +266,11 @@ public final class DOMRetrievalMethod extends DOMStructure
     public XMLStructure dereferenceAsXMLStructure(XMLCryptoContext context)
         throws URIReferenceException
     {
+        DocumentBuilder db = null;
+        boolean secVal = Utils.secureValidation(context);
         try {
             ApacheData data = (ApacheData)dereference(context);
-            boolean secVal = Utils.secureValidation(context);
-            DocumentBuilder db = 
-                org.apache.xml.security.utils.XMLUtils.createDocumentBuilder(false, secVal);
+            db = XMLUtils.createDocumentBuilder(false, secVal);
             Document doc = db.parse(new ByteArrayInputStream
                 (data.getXMLSignatureInput().getBytes()));
             Element kiElem = doc.getDocumentElement();
@@ -270,6 +282,10 @@ public final class DOMRetrievalMethod extends DOMStructure
             }
         } catch (Exception e) {
             throw new URIReferenceException(e);
+        } finally {
+            if (db != null) {
+                XMLUtils.repoolDocumentBuilder(db);
+            }
         }
     }
 
@@ -289,7 +305,7 @@ public final class DOMRetrievalMethod extends DOMStructure
         return uri.equals(orm.getURI()) &&
             transforms.equals(orm.getTransforms()) && typesEqual;
     }
-    
+
     @Override
     public int hashCode() {
         int result = 17;
@@ -298,7 +314,7 @@ public final class DOMRetrievalMethod extends DOMStructure
         }
         result = 31 * result + uri.hashCode();
         result = 31 * result + transforms.hashCode();
-        
+
         return result;
     }
 }

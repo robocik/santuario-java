@@ -37,6 +37,10 @@ public class XMLEncryptionException extends XMLSecurityException {
         super();
     }
     
+    public XMLEncryptionException(Exception ex) {
+        super(ex);
+    }
+    
     /**
      * 
      * @param msgID
@@ -55,22 +59,20 @@ public class XMLEncryptionException extends XMLSecurityException {
     }
     
     /**
-     * 
-     * @param msgID
      * @param originalException
+     * @param msgID
      */
-    public XMLEncryptionException(String msgID, Exception originalException) {
-        super(msgID, originalException);
+    public XMLEncryptionException(Exception originalException, String msgID) {
+        super(originalException, msgID);
         
     }
     
     /**
-     * 
+     * @param originalException
      * @param msgID
      * @param exArgs
-     * @param originalException
      */
-    public XMLEncryptionException(String msgID, Object exArgs[], Exception originalException) {
-        super(msgID, exArgs, originalException);
+    public XMLEncryptionException(Exception originalException, String msgID, Object exArgs[]) {
+        super(originalException, msgID, exArgs);
     }
 }

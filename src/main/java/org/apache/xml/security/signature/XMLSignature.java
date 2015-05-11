@@ -488,7 +488,7 @@ public final class XMLSignature extends SignatureElementProxy {
         try {
             return Base64.decode(signatureValueElement);
         } catch (Base64DecodingException ex) {
-            throw new XMLSignatureException("empty", ex);
+            throw new XMLSignatureException(ex, "empty");
         }
     }
 
@@ -568,7 +568,7 @@ public final class XMLSignature extends SignatureElementProxy {
         appendSelf(object);
         addReturnToSelf();
         //} catch (XMLSecurityException ex) {
-        // throw new XMLSignatureException("empty", ex);
+        // throw new XMLSignatureException(ex);
         //}
     }
 
@@ -651,11 +651,11 @@ public final class XMLSignature extends SignatureElementProxy {
         } catch (XMLSignatureException ex) {
             throw ex;
         } catch (CanonicalizationException ex) {
-            throw new XMLSignatureException("empty", ex);
+            throw new XMLSignatureException(ex);
         } catch (InvalidCanonicalizerException ex) {
-            throw new XMLSignatureException("empty", ex);
+            throw new XMLSignatureException(ex);
         } catch (XMLSecurityException ex) {
-            throw new XMLSignatureException("empty", ex);
+            throw new XMLSignatureException(ex);
         }
     }
 
@@ -765,7 +765,7 @@ public final class XMLSignature extends SignatureElementProxy {
         } catch (XMLSignatureException ex) {
             throw ex;
         } catch (XMLSecurityException ex) {
-            throw new XMLSignatureException("empty", ex);
+            throw new XMLSignatureException(ex);
         } 
     }
 

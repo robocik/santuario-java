@@ -58,6 +58,7 @@ import org.apache.xml.security.keys.keyresolver.KeyResolverException;
 import org.apache.xml.security.keys.keyresolver.KeyResolverSpi;
 import org.apache.xml.security.keys.keyresolver.implementations.EncryptedKeyResolver;
 import org.apache.xml.security.signature.XMLSignatureException;
+
 import org.apache.xml.security.stax.ext.XMLSecurityConstants;
 import org.apache.xml.security.transforms.InvalidTransformException;
 import org.apache.xml.security.transforms.TransformationException;
@@ -252,6 +253,8 @@ public class XMLCipher {
     CAMELLIA_128_KeyWrap + "\n" + CAMELLIA_192_KeyWrap + "\n" + CAMELLIA_256_KeyWrap + "\n" +
     SEED_128_KeyWrap + "\n";
 
+    private static final boolean HAVE_FUNCTIONAL_IDENTITY_TRANSFORMER = haveFunctionalIdentityTransformer();
+
     /** Cipher created during initialisation that is used for encryption */
     private Cipher contextCipher;
     
@@ -353,11 +356,15 @@ public class XMLCipher {
                 this.canon = Canonicalizer.getInstance(canonAlg);
             }
         } catch (InvalidCanonicalizerException ice) {
-            throw new XMLEncryptionException("empty", ice);
+            throw new XMLEncryptionException(ice);
         }
 
         if (serializer == null) {
-            serializer = new TransformSerializer();
+            if (HAVE_FUNCTIONAL_IDENTITY_TRANSFORMER) {
+                serializer = new TransformSerializer();
+            } else {
+                serializer = new DocumentSerializer();
+            }
         }
         serializer.setCanonicalizer(this.canon);
         
@@ -949,7 +956,7 @@ public class XMLCipher {
         case WRAP_MODE:
             break;
         default:
-            throw new XMLEncryptionException("empty", new IllegalStateException());
+            throw new XMLEncryptionException(new IllegalStateException());
         }
 
         return result;
@@ -990,7 +997,7 @@ public class XMLCipher {
         case WRAP_MODE:
             break;
         default:
-            throw new XMLEncryptionException("empty", new IllegalStateException());
+            throw new XMLEncryptionException(new IllegalStateException());
         }
 
         return result;
@@ -1044,7 +1051,7 @@ public class XMLCipher {
         case WRAP_MODE:
             break;
         default:
-            throw new XMLEncryptionException("empty", new IllegalStateException());
+            throw new XMLEncryptionException(new IllegalStateException());
         }
 
         return result;
@@ -1183,7 +1190,7 @@ public class XMLCipher {
             AlgorithmParameterSpec paramSpec = constructBlockCipherParameters(algorithm, iv);
             c.init(cipherMode, key, paramSpec);
         } catch (InvalidKeyException ike) {
-            throw new XMLEncryptionException("empty", ike);
+            throw new XMLEncryptionException(ike);
         }
 
         try {
@@ -1209,13 +1216,13 @@ public class XMLCipher {
                              + Integer.toString(encryptedBytes.length));
             }
         } catch (IllegalStateException ise) {
-            throw new XMLEncryptionException("empty", ise);
+            throw new XMLEncryptionException(ise);
         } catch (IllegalBlockSizeException ibse) {
-            throw new XMLEncryptionException("empty", ibse);
+            throw new XMLEncryptionException(ibse);
         } catch (BadPaddingException bpe) {
-            throw new XMLEncryptionException("empty", bpe);
+            throw new XMLEncryptionException(bpe);
         } catch (UnsupportedEncodingException uee) {
-            throw new XMLEncryptionException("empty", uee);
+            throw new XMLEncryptionException(uee);
         }
 
         // Get IV from Cipher Object. If this is null (see BouncyCastle issue BJA-473) then use
@@ -1247,7 +1254,7 @@ public class XMLCipher {
             method.setDigestAlgorithm(digestAlg);
             ed.setEncryptionMethod(method);
         } catch (URISyntaxException ex) {
-            throw new XMLEncryptionException("empty", ex);
+            throw new XMLEncryptionException(ex);
         }
         return ed;
     }
@@ -1446,11 +1453,11 @@ public class XMLCipher {
             }
             encryptedBytes = c.wrap(key);
         } catch (InvalidKeyException ike) {
-            throw new XMLEncryptionException("empty", ike);
+            throw new XMLEncryptionException(ike);
         } catch (IllegalBlockSizeException ibse) {
-            throw new XMLEncryptionException("empty", ibse);
+            throw new XMLEncryptionException(ibse);
         } catch (InvalidAlgorithmParameterException e) {
-            throw new XMLEncryptionException("empty", e);
+            throw new XMLEncryptionException(e);
         }
 
         String base64EncodedEncryptedOctets = Base64.encode(encryptedBytes);
@@ -1469,7 +1476,7 @@ public class XMLCipher {
             method.setOAEPparams(oaepParams);
             ek.setEncryptionMethod(method);
         } catch (URISyntaxException ex) {
-            throw new XMLEncryptionException("empty", ex);
+            throw new XMLEncryptionException(ex);
         }
         return ek;
     }
@@ -1479,7 +1486,7 @@ public class XMLCipher {
      *
      * @param encryptedKey Previously loaded EncryptedKey that needs
      * to be decrypted.
-     * @param algorithm Algorithm for the decryption
+     * @param algorithm Algorithm for the decrypted key
      * @return a key corresponding to the given type
      * @throws XMLEncryptionException
      */
@@ -1508,7 +1515,7 @@ public class XMLCipher {
                 try {
                     String keyWrapAlg = encryptedKey.getEncryptionMethod().getAlgorithm();
                     String keyType = JCEMapper.getJCEKeyAlgorithmFromURI(keyWrapAlg);
-                    if ("RSA".equals(keyType)) {
+                    if ("RSA".equals(keyType) || "EC".equals(keyType)) {
                         key = ki.getPrivateKey();
                     } else {
                         key = ki.getSecretKey();
@@ -1564,11 +1571,11 @@ public class XMLCipher {
             }
             ret = c.unwrap(encryptedBytes, jceKeyAlgorithm, Cipher.SECRET_KEY);
         } catch (InvalidKeyException ike) {
-            throw new XMLEncryptionException("empty", ike);
+            throw new XMLEncryptionException(ike);
         } catch (NoSuchAlgorithmException nsae) {
-            throw new XMLEncryptionException("empty", nsae);
+            throw new XMLEncryptionException( nsae);
         } catch (InvalidAlgorithmParameterException e) {
-            throw new XMLEncryptionException("empty", e);
+            throw new XMLEncryptionException(e);
         }
         if (log.isDebugEnabled()) {
             log.debug("Decryption of key type " + algorithm + " OK");
@@ -1636,9 +1643,9 @@ public class XMLCipher {
             // Some JDKs don't support RSA/ECB/OAEPPadding
             c = constructCipher(algorithm, digestAlgorithm, nsae);
         } catch (NoSuchProviderException nspre) {
-            throw new XMLEncryptionException("empty", nspre);
+            throw new XMLEncryptionException(nspre);
         } catch (NoSuchPaddingException nspae) {
-            throw new XMLEncryptionException("empty", nspae);
+            throw new XMLEncryptionException(nspae);
         }
         
         return c;
@@ -1658,7 +1665,7 @@ public class XMLCipher {
                     return Cipher.getInstance("RSA/ECB/OAEPWithSHA1AndMGF1Padding", requestedJCEProvider);
                 }
             } catch (Exception ex) {
-                throw new XMLEncryptionException("empty", ex);
+                throw new XMLEncryptionException(ex);
             }
         } else if (MessageDigestAlgorithm.ALGO_ID_DIGEST_SHA256.equals(digestAlgorithm)) {
             try {
@@ -1668,7 +1675,7 @@ public class XMLCipher {
                     return Cipher.getInstance("RSA/ECB/OAEPWithSHA-256AndMGF1Padding", requestedJCEProvider);
                 }
             } catch (Exception ex) {
-                throw new XMLEncryptionException("empty", ex);
+                throw new XMLEncryptionException(ex);
             }
         } else if (MessageDigestAlgorithm.ALGO_ID_DIGEST_SHA384.equals(digestAlgorithm)) {
             try {
@@ -1678,7 +1685,7 @@ public class XMLCipher {
                     return Cipher.getInstance("RSA/ECB/OAEPWithSHA-384AndMGF1Padding", requestedJCEProvider);
                 }
             } catch (Exception ex) {
-                throw new XMLEncryptionException("empty", ex);
+                throw new XMLEncryptionException(ex);
             }
         } else if (MessageDigestAlgorithm.ALGO_ID_DIGEST_SHA512.equals(digestAlgorithm)) {
             try {
@@ -1688,10 +1695,10 @@ public class XMLCipher {
                     return Cipher.getInstance("RSA/ECB/OAEPWithSHA-512AndMGF1Padding", requestedJCEProvider);
                 }
             } catch (Exception ex) {
-                throw new XMLEncryptionException("empty", ex);
+                throw new XMLEncryptionException(ex);
             }
         } else {
-            throw new XMLEncryptionException("empty", nsae);
+            throw new XMLEncryptionException(nsae);
         }
     }
 
@@ -1854,11 +1861,11 @@ public class XMLCipher {
                 c = Cipher.getInstance(jceAlgorithm, requestedJCEProvider);
             }
         } catch (NoSuchAlgorithmException nsae) {
-            throw new XMLEncryptionException("empty", nsae);
+            throw new XMLEncryptionException(nsae);
         } catch (NoSuchProviderException nspre) {
-            throw new XMLEncryptionException("empty", nspre);
+            throw new XMLEncryptionException(nspre);
         } catch (NoSuchPaddingException nspae) {
-            throw new XMLEncryptionException("empty", nspae);
+            throw new XMLEncryptionException(nspae);
         }
 
         int ivLen = JCEMapper.getIVLengthFromURI(encryptedData.getEncryptionMethod().getAlgorithm()) / 8;
@@ -1875,17 +1882,17 @@ public class XMLCipher {
         try {
             c.init(cipherMode, key, paramSpec);
         } catch (InvalidKeyException ike) {
-            throw new XMLEncryptionException("empty", ike);
+            throw new XMLEncryptionException(ike);
         } catch (InvalidAlgorithmParameterException iape) {
-            throw new XMLEncryptionException("empty", iape);
+            throw new XMLEncryptionException(iape);
         }
 
         try {
             return c.doFinal(encryptedBytes, ivLen, encryptedBytes.length - ivLen);
         } catch (IllegalBlockSizeException ibse) {
-            throw new XMLEncryptionException("empty", ibse);
+            throw new XMLEncryptionException(ibse);
         } catch (BadPaddingException bpe) {
-            throw new XMLEncryptionException("empty", bpe);
+            throw new XMLEncryptionException(bpe);
         }
     }
 
@@ -2274,11 +2281,11 @@ public class XMLCipher {
                 try {
                     result.setTransforms(new TransformsImpl(transformsElement));
                 } catch (XMLSignatureException xse) {
-                    throw new XMLEncryptionException("empty", xse);
+                    throw new XMLEncryptionException(xse);
                 } catch (InvalidTransformException ite) {
-                    throw new XMLEncryptionException("empty", ite);
+                    throw new XMLEncryptionException(ite);
                 } catch (XMLSecurityException xse) {
-                    throw new XMLEncryptionException("empty", xse);
+                    throw new XMLEncryptionException(xse);
                 }
             }
 
@@ -2321,7 +2328,7 @@ public class XMLCipher {
             result.setId(element.getAttributeNS(null, EncryptionConstants._ATT_ID));
             result.setType(element.getAttributeNS(null, EncryptionConstants._ATT_TYPE));
             result.setMimeType(element.getAttributeNS(null, EncryptionConstants._ATT_MIMETYPE));
-            result.setEncoding( element.getAttributeNS(null, Constants._ATT_ENCODING));
+            result.setEncoding(element.getAttributeNS(null, Constants._ATT_ENCODING));
 
             Element encryptionMethodElement =
                 (Element) element.getElementsByTagNameNS(
@@ -2722,7 +2729,7 @@ public class XMLCipher {
             XMLEncryptionException {
                 if (cipherType == VALUE_TYPE) {
                     throw new XMLEncryptionException(
-                        "empty", new UnsupportedOperationException(referenceMessage)
+                        new UnsupportedOperationException(referenceMessage)
                     );
                 }
 
@@ -3666,6 +3673,31 @@ public class XMLCipher {
                     return EncryptionConstants._TAG_KEYREFERENCE;
                 }
             }
+        }
+    }
+
+    private static boolean haveFunctionalIdentityTransformer() {
+        final String xml =
+                "<a:e1 xmlns:a=\"a\" xmlns:b=\"b\">"
+                        + "<a xmlns=\"a\" xmlns:b=\"b\"/>"
+                        + "</a:e1>";
+
+        try {
+            final javax.xml.transform.dom.DOMResult domResult = new javax.xml.transform.dom.DOMResult();
+            final javax.xml.transform.TransformerFactory transformerFactory =
+                    javax.xml.transform.TransformerFactory.newInstance();
+            transformerFactory.newTransformer().transform(
+                    new javax.xml.transform.stream.StreamSource(
+                            new java.io.ByteArrayInputStream(xml.getBytes("UTF-8"))), domResult);
+
+            final boolean result = "http://www.w3.org/2000/xmlns/".equals(
+                    domResult.getNode().getFirstChild().getFirstChild().getAttributes().item(1).getNamespaceURI());
+            log.debug("Have functional IdentityTransformer: " + result);
+            return result;
+
+        } catch (Exception e) {
+            log.debug(e.getMessage(), e);
+            return false;
         }
     }
 }

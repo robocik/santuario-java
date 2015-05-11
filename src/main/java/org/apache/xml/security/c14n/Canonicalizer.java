@@ -117,7 +117,7 @@ public class Canonicalizer {
         } catch (Exception e) {
             Object exArgs[] = { algorithmURI };
             throw new InvalidCanonicalizerException(
-                "signature.Canonicalizer.UnknownCanonicalizer", exArgs, e
+                e, "signature.Canonicalizer.UnknownCanonicalizer", exArgs
             );
         }
     }
@@ -281,7 +281,12 @@ public class Canonicalizer {
          */
         db.setErrorHandler(new org.apache.xml.security.utils.IgnoreAllErrorHandler());
 
-        Document document = db.parse(in);
+        Document document;
+        try {
+            document = db.parse(in);
+        } finally {
+            XMLUtils.repoolDocumentBuilder(db);
+        }
         return this.canonicalizeSubtree(document);
     }
 

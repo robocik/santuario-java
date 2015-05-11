@@ -22,7 +22,7 @@
     <artifactId>xmlsec</artifactId>
     <packaging>bundle</packaging>
     <name>Apache XML Security for Java</name>
-    <version>2.0.3-SNAPSHOT</version>
+    <version>2.0.5-SNAPSHOT</version>
     <description>
         Apache XML Security for Java supports XML-Signature Syntax and Processing,
         W3C Recommendation 12 February 2002, and XML Encryption Syntax and
@@ -72,7 +72,7 @@
     <parent>
         <groupId>org.apache</groupId>
         <artifactId>apache</artifactId>
-        <version>14</version>
+        <version>16</version>
     </parent>
 
     <build>
@@ -133,7 +133,7 @@
             <plugin>
                 <groupId>org.apache.maven.plugins</groupId>
                 <artifactId>maven-compiler-plugin</artifactId>
-                <version>3.1</version>
+                <version>3.3</version>
                 <configuration>
                     <source>1.6</source>
                     <target>1.6</target>
@@ -268,7 +268,7 @@
             <plugin>
                 <groupId>org.apache.maven.plugins</groupId>
                 <artifactId>maven-javadoc-plugin</artifactId>
-                <version>2.9.1</version>
+                <version>2.10.1</version>
             </plugin>
 
         </plugins>
@@ -278,7 +278,7 @@
                 <plugin>
                     <groupId>org.apache.maven.plugins</groupId>
                     <artifactId>maven-javadoc-plugin</artifactId>
-                    <version>2.9.1</version>
+                    <version>2.10.1</version>
                     <executions>
                         <execution>
                             <goals>
@@ -406,15 +406,15 @@
 
     <properties>
         <xml.apis.version>1.4.01</xml.apis.version>
-        <oldxmlsec.version>1.5.6</oldxmlsec.version>
-        <slf4j.version>1.7.7</slf4j.version>
+        <oldxmlsec.version>1.5.7</oldxmlsec.version>
+        <slf4j.version>1.7.9</slf4j.version>
         <xalan.version>2.7.2</xalan.version>
         <xerces.version>2.11.0</xerces.version>
-        <junit.version>4.11</junit.version>
+        <junit.version>4.12</junit.version>
         <log4j.version>1.2.17</log4j.version>
-        <bcprov.version>1.51</bcprov.version>
-        <xmlunit.version>1.5</xmlunit.version>
-        <commons.codec.version>1.9</commons.codec.version>
+        <bcprov.version>1.52</bcprov.version>
+        <xmlunit.version>1.6</xmlunit.version>
+        <commons.codec.version>1.10</commons.codec.version>
         <woodstox.core.asl.version>4.4.1</woodstox.core.asl.version>
         <jetty.version>8.1.4.v20120524</jetty.version>
         <xmlsec.jaxb.context.class />
